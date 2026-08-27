@@ -1,0 +1,37 @@
+name: 每日更新活动数据
+
+on:
+  schedule:
+    # 北京时间 08:00 = UTC 00:00
+    - cron: '0 0 * * *'
+  workflow_dispatch:  # 允许手动在 GitHub 网页上点一下立即运行
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 配置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 生成当日活动数据
+        run: python scripts/update_activities.py
+
+      - name: 提交更新
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add activities.json
+          if git diff --cached --quiet; then
+            echo "无变化，跳过提交"
+          else
+            git commit -m "auto: 更新活动数据 $(date +%F)"
+            git push
+          fi
